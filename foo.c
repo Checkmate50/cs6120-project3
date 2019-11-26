@@ -1,9 +1,6 @@
 #include <stdio.h>
-int test() {
-  return 0;
-}
-
 int main() {
-  printf("hello world");
+  int num = 1;
+  printf("%i\n", num + 2);
   return 0;
 }
