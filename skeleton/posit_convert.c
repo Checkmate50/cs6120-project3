@@ -1,19 +1,6 @@
 #include <math.h>
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdint.h>
-/* includes:
-  uint32_t
-  ui32_p32 
-  uint_fast32_t 
-  int_fast32_t 
-  uint_fast16_t 
-  int_fast8_t 
- */
-
-typedef struct { uint32_t v; bool exact; } posit32_t;
-union ui32_p32 { uint32_t ui; posit32_t p; };
+#include "posit.h"
 
 void checkExtraP32TwoBits(double f32, double temp, bool * bitsNPlusOne, bool * bitsMore ){
 	temp /= 2;
@@ -240,16 +227,59 @@ posit32_t convertDoubleToP32(double f32){
 	return uZ.p;
 }
 
-/*
-int main() {
-  float float_val = 1;
-  posit32_t p = convertDoubleToP32((double)float_val);
-  uint32_t bits = p.v;
-  
-  printf("\nposit representation of %f: ", float_val);
-  for(int i = 31; i >= 0; i--) {
-    printf("%d", !!(bits & (1 << i)));
-  }
-  printf("\n");
+double convertP32ToDouble(posit32_t pA){
+	union ui32_p32 uA;
+	union ui64_double uZ;
+	uint_fast32_t uiA, tmp=0;
+	uint_fast64_t expA=0, uiZ, fracA=0;
+	bool signA=0, regSA;
+	int_fast32_t scale, kA=0;
+
+	uA.p = pA;
+	uiA = uA.ui;
+
+	if (uA.ui == 0)
+		return 0;
+	else if(uA.ui == 0x80000000)
+		return NAN;
+
+	else{
+		signA = signP32UI( uiA );
+		if(signA) uiA = (-uiA & 0xFFFFFFFF);
+		regSA = signregP32UI(uiA);
+		tmp = (uiA<<2)&0xFFFFFFFF;
+		if (regSA){
+
+			while (tmp>>31){
+				kA++;
+				tmp= (tmp<<1) & 0xFFFFFFFF;
+			}
+		}
+		else{
+			kA=-1;
+			while (!(tmp>>31)){
+				kA--;
+				tmp= (tmp<<1) & 0xFFFFFFFF;
+			}
+			tmp&=0x7FFFFFFF;
+		}
+		expA = tmp>>29; //to get 2 bits
+
+		fracA = (((uint64_t)tmp<<3)  & 0xFFFFFFFF)<<20;
+
+		expA = (((kA<<2)+expA) + 1023) << 52;
+		uiZ = expA + fracA + (((uint64_t)signA&0x1)<<63);
+
+		uZ.ui = uiZ;
+		return uZ.d;
+	}
 }
-*/
+
+float convertP32ToFloat(posit32_t p) {
+  return (float) convertP32ToDouble(p);
+}
+
+posit32_t convertFloatToP32(float f32) {
+  return convertDoubleToP32((double) f32);
+}
+
