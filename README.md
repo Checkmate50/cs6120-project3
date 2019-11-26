@@ -5,7 +5,7 @@ It's for LLVM 3.8.
 
 Build:
 
-    $ cd llvm-pass-skeleton
+    $ cd cs6120-project3
     $ mkdir build
     $ cd build
     $ cmake ..
@@ -14,4 +14,4 @@ Build:
 
 Run:
 
-    $ clang -Xclang -load -Xclang build/skeleton/libSkeletonPass.* something.c
+    $ clang -Xclang -load -Xclang build/posit/libPositPass.* foo.c
