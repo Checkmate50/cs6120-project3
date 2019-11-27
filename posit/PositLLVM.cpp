@@ -18,11 +18,21 @@ namespace {
     PositPass() : FunctionPass(ID) {}
 
     virtual bool runOnFunction(Function &F) {
+      // Build function types
       LLVMContext &Ctx = F.getContext();
-      std::vector<Type*> paramTypes = {Type::getInt32Ty(Ctx), Type::getInt32Ty(Ctx)};
-      Type *retType = Type::getInt32Ty(Ctx);
-      FunctionType *barFuncTyp = FunctionType::get(retType, paramTypes, false);
-      Constant *barFunc = F.getParent()->getOrInsertFunction("myAdd", barFuncTyp);
+      std::vector<Type*> paramTypes;
+      Type* retType;
+      FunctionType* funcType;
+      StructType* positType = StructType::create(Ctx);
+      positType->setBody({StructType::getInt32Ty(Ctx), StructType::getInt32Ty(Ctx)});
+      paramTypes = {Type::getDoubleTy(Ctx)};
+      retType = positType;
+      funcType = FunctionType::get(retType, paramTypes, false);
+      Constant* positFunc = F.getParent()->getOrInsertFunction("convertDoubleToP32", funcType);
+      paramTypes = {positType};
+      retType = Type::getDoubleTy(Ctx);
+      funcType = FunctionType::get(retType, paramTypes, false);
+      Constant* lowerFunc = F.getParent()->getOrInsertFunction("convertP32ToDouble", funcType);
 
       bool modified = false;
       for (auto& B : F) {
@@ -39,8 +49,14 @@ namespace {
             Value* lhs = op->getOperand(0);
             Value* rhs = op->getOperand(1);
             Value* args[] = {lhs, rhs};
-            if (opCode == "add") {
-              newOp = builder.CreateCall(barFunc, args);
+            if (opCode == "fadd") {
+              errs() << "type: " << lhs->getType();
+              // Value* allocation = builder.CreateAlloca(positType);
+              Value* liftOp = builder.CreateCall(positFunc, {lhs});
+              // Value* storePosit = builder.CreateStore(liftOp, allocation);
+              // Value* loadPosit = builder.CreateLoad(allocation);
+              Value* lowerOp = builder.CreateCall(lowerFunc, liftOp);
+              newOp = builder.CreateFSub(lowerOp, rhs);
             }
           }
 
