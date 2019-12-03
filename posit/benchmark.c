@@ -27,6 +27,7 @@ bool within_epsilon(double a, double b) {
   return abs(a - b) < float_epsilon; 
 }
 
+/*
 void detect_posit_pass(double result, double float_answer, double posit_answer) {
   if(within_epsilon(result, float_answer)) {
     printf("Absence of LLVM Pass Detected: floats were used\n");
@@ -40,41 +41,64 @@ void detect_posit_pass(double result, double float_answer, double posit_answer) 
     }
   }
 }
+*/
 
-void pointer_ops_sanity_check(int n,
-                          double float_add_answer, double float_sub_answer, 
-                          double float_mul_answer, double float_div_answer,
-                          double posit_add_answer, double posit_sub_answer, 
-                          double posit_mul_answer, double posit_div_answer) {
-  double small = 0.01f;
+typedef struct small_res {double *add; double *sub; double *mul; double *div;} small_res;
 
-  float *add_ptr_result = &(float){small},
-        *sub_ptr_result = &(float){small},
-        *mul_ptr_result = &(float){small}, 
-        *div_ptr_result = &(float){small};
+small_res small_pointer_benchmark(int n, double small) {
+  small_res res = {malloc(sizeof(double)), malloc(sizeof(double)), malloc(sizeof(double)), malloc(sizeof(double))};
+  *res.add = 0.0l;
+  *res.sub = 0.0l;
+  *res.mul = 1.0l;
+  *res.div = 1.0l;
 
   for(int i = 0; i < n; i++) {
-    *add_ptr_result = *add_ptr_result + small;
-    *sub_ptr_result = *sub_ptr_result - small;
-    *mul_ptr_result = *mul_ptr_result * small;
-    *div_ptr_result = *div_ptr_result / small;
+    *res.add = *res.add + small;
+    *res.sub = *res.sub - small;
+    *res.mul = *res.mul * small;
+    *res.div = *res.div / small;
   }
 
-  printf("checking if repeated addition pointer op correctly executed over either floats or posits...\n");
-  detect_posit_pass(*add_ptr_result, float_add_answer, posit_add_answer);
+  return res;
+}
 
-  printf("checking if repeated subtraction pointer op correctly executed over either floats or posits...\n");
-  detect_posit_pass(*sub_ptr_result, float_sub_answer, posit_sub_answer);
+void print_assert_equal(double result, double expected) {
+  if(result == expected) {
+    printf("SUCCESS\n");
+  }
+  else {
+    printf("FAILURE\n");
+  }
+}
 
-  printf("checking if repeated multiplication pointer op correctly executed over either floats or posits...\n");
-  detect_posit_pass(*mul_ptr_result, float_mul_answer, posit_mul_answer);
+void pointer_ops_sanity_check(int n, double small, small_res expected) {
 
-  printf("checking if repeated division pointer op correctly executed over either floats or posits...\n");
-  detect_posit_pass(*div_ptr_result, float_div_answer, posit_div_answer);
+  small_res res = small_pointer_benchmark(n, small);
 
+  printf("pointer sanity check for addition... ");
+  print_assert_equal(*res.add, *expected.add);
+
+  printf("pointer sanity check for subtraction... ");
+  print_assert_equal(*res.sub, *expected.sub);
+
+  printf("pointer sanity check for multiplication... ");
+  print_assert_equal(*res.mul, *expected.mul);
+
+  printf("pointer sanity check for division... ");
+  print_assert_equal(*res.div, *expected.div);
 }
 
 int main() {
+  /*
   int n = 10000;
-  printf("accuracy of summation up to %d = %f", n, summation_benchmark(n));
+  printf("accuracy of summation up to %d = %f\n", n, summation_benchmark(n));
+  */
+
+  int n = 6; 
+  double small = 0.132718f;
+  small_res res = small_pointer_benchmark(n, small);
+
+  printf("results of small_pointer_benchmark(%d, %f)\n:", n, small);
+  printf("add = %f\nsub = %f\nmul = %f\ndiv = %f\n", *res.add, *res.sub, *res.mul, *res.div);
 }
+
