@@ -19,16 +19,18 @@ namespace {
 
     virtual bool runOnFunction(Function &F) {
       // Build function types
+
+      // Lots of duplicated code I'm too lazy to factor out
       LLVMContext &Ctx = F.getContext();
       std::vector<Type*> paramTypes;
       Type* retType;
       FunctionType* funcType;
       StructType* positType = StructType::create(Ctx);
       positType->setBody({StructType::getInt64Ty(Ctx)});
-      paramTypes = {Type::getFloatTy(Ctx)};
+      paramTypes = {Type::getDoubleTy(Ctx)};
       retType = positType;
       funcType = FunctionType::get(retType, paramTypes, false);
-      Constant* positFunc = F.getParent()->getOrInsertFunction("convertFloatToP32", funcType);
+      Constant* positFunc = F.getParent()->getOrInsertFunction("convertDoubleToP32", funcType);
       paramTypes = {positType, positType};
       retType = positType;
       funcType = FunctionType::get(retType, paramTypes, false);
@@ -42,9 +44,9 @@ namespace {
       Constant* leFunc = F.getParent()->getOrInsertFunction("p32_le", funcType);
       Constant* ltFunc = F.getParent()->getOrInsertFunction("p32_lt", funcType);
       paramTypes = {positType};
-      retType = Type::getFloatTy(Ctx);
+      retType = Type::getDoubleTy(Ctx);
       funcType = FunctionType::get(retType, paramTypes, false);
-      Constant* lowerFunc = F.getParent()->getOrInsertFunction("convertP32ToFloat", funcType);
+      Constant* lowerFunc = F.getParent()->getOrInsertFunction("convertP32ToDouble", funcType);
 
       bool modified = false;
       for (auto& B : F) {
@@ -56,42 +58,37 @@ namespace {
           Value* newOp = NULL;
           std::string opCode = op->getOpcodeName();
 
-          // if (op->getNumOperands() == 1) {
-          //   Value* oper = op->getOperand(0);
-          // }
-
           // Make a multiply with the same operands as `op`.
           if (op->getNumOperands() == 2) {
             Value* lhs = op->getOperand(0);
             Value* rhs = op->getOperand(1);
-            if (lhs->getType()->isFloatTy() && rhs->getType()->isFloatTy()) {
+            // If we're doing a binary double operation, lower it and raise it again
+            if (lhs->getType()->isDoubleTy() && rhs->getType()->isDoubleTy()) {
+              // Again, lots of refactoring that could be done, but...
               Value* args[] = {lhs, rhs};
               if (opCode == "fadd") {
-                // Value* allocation = builder.CreateAlloca(positType);
-                // Value* storePosit = builder.CreateStore(liftOp, allocation);
-                // Value* loadPosit = builder.CreateLoad(allocation);
                 Value* leftOp = builder.CreateCall(positFunc, {lhs});
                 Value* rightOp = builder.CreateCall(positFunc, {rhs});
-                Value* addOp = builder.CreateCall(addFunc, {leftOp, rightOp});
-                newOp = builder.CreateCall(lowerFunc, addOp);
+                Value* fnOp = builder.CreateCall(addFunc, {leftOp, rightOp});
+                newOp = builder.CreateCall(lowerFunc, fnOp);
               }
               if (opCode == "fsub") {
                 Value* leftOp = builder.CreateCall(positFunc, {lhs});
                 Value* rightOp = builder.CreateCall(positFunc, {rhs});
-                Value* addOp = builder.CreateCall(subFunc, {leftOp, rightOp});
-                newOp = builder.CreateCall(lowerFunc, addOp);
+                Value* fnOp = builder.CreateCall(subFunc, {leftOp, rightOp});
+                newOp = builder.CreateCall(lowerFunc, fnOp);
               }
               if (opCode == "fmul") {
                 Value* leftOp = builder.CreateCall(positFunc, {lhs});
                 Value* rightOp = builder.CreateCall(positFunc, {rhs});
-                Value* addOp = builder.CreateCall(subFunc, {leftOp, rightOp});
-                newOp = builder.CreateCall(mulFunc, addOp);
+                Value* fnOp = builder.CreateCall(mulFunc, {leftOp, rightOp});
+                newOp = builder.CreateCall(lowerFunc, fnOp);
               }
               if (opCode == "fdiv") {
                 Value* leftOp = builder.CreateCall(positFunc, {lhs});
                 Value* rightOp = builder.CreateCall(positFunc, {rhs});
-                Value* addOp = builder.CreateCall(subFunc, {leftOp, rightOp});
-                newOp = builder.CreateCall(divFunc, addOp);
+                Value* fnOp = builder.CreateCall(divFunc, {leftOp, rightOp});
+                newOp = builder.CreateCall(lowerFunc, fnOp);
               }
               if (opCode == "feq") {
                 Value* leftOp = builder.CreateCall(positFunc, {lhs});
