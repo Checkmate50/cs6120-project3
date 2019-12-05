@@ -26,3 +26,9 @@ Float error stdev:      1.0357963988826102e-07
 Posit mean error:       1.5800839185914704e-08
 Posit error stdev:      7.911308841054093e-09
 
+floudas1
+Length: 92572956
+Float mean error:       2.1399413107119897e-07
+Float error stdev:      1.619551760298505e-07
+Posit mean error:       1.440572567302994e-08
+Posit error stdev:      1.2067541744275542e-08
