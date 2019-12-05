@@ -4,3 +4,4 @@ build
 *.o
 *.gch
 *.out
+fpbench_results/*

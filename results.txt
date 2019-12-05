@@ -1,0 +1,28 @@
+sum
+Length: 1000
+Float mean error:       7.654921826549295e-08
+Float error stdev:      5.061021868801623e-08
+Posit mean error:       4.784325953240903e-09
+Posit error stdev:      3.163138556268356e-09
+
+x_by_xy
+Length: 961
+Float mean error:       1.0956167898995821e-07
+Float error stdev:      9.163677410447376e-08
+Posit mean error:       6.855900949418599e-09
+Posit error stdev:      5.670284675136425e-09
+
+delta4
+Length: 262144
+Float mean error:       5.804795667593407e-07
+Float error stdev:      6.464163846373005e-06
+Posit mean error:       3.632680400340862e-08
+Posit error stdev:      3.811743510085217e-07
+
+kepler0
+Length: 262144
+Float mean error:       2.517641208343948e-07
+Float error stdev:      1.0357963988826102e-07
+Posit mean error:       1.5800839185914704e-08
+Posit error stdev:      7.911308841054093e-09
+
